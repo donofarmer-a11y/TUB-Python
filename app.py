@@ -18,6 +18,7 @@ def load_data():
 
 df = load_data()
 
+st.title("World Cup Matches Dashboard")
 
 # ---------------------------------------------------------------------------
 # Sidebar filters — kept minimal on purpose:
