@@ -157,9 +157,6 @@ wmiii = pd.pivot_table(
     columns="Home Team Goals",
     index="Away Team Goals",
     aggfunc="count",
-    labels={"Home Team Goals":"Home Team Score",
-            "Away Team Goals":"Away Team Score",
-            "color":"Total occurances"},
     observed=True,
     fill_value=0,
 )
@@ -171,6 +168,9 @@ wmiii_display = wmiii.replace(0, np.nan)
 fig_scores = px.imshow(
     wmiii_display,
     origin="lower",
+    labels={"Home Team Goals":"Home Team Score",
+            "Away Team Goals":"Away Team Score",
+            "color":"Total occurances"},
     height=500,
     width=900,
 )
