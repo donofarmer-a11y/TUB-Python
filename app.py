@@ -82,43 +82,29 @@ fig.update_traces(mode="lines+markers", selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 2. Average total goals per referee
+# 2. Average total goals by referee country
 # ---------------------------------------------------------------------------
-st.subheader("Average Total Goals per Match by Referee")
+st.subheader("Average Total Goals per World Cup Match by Referees by Country")
 
-# Calculate average goals for each referee
-referee_stats = (
-    df_filtered
-    .groupby("Referee")
-    .agg(
-        Matches=("Referee", "count"),
-        AvgGoals=("Total Goals", "mean")
-    )
-    .reset_index()
-)
+wmii = df_filtered.copy()
+wmii["Referee"] = df_filtered["Referee"].astype(str).str[-4:-1]
+wmii["Assistant 1"] = df_filtered["Assistant 1"].astype(str).str[-4:-1]
+wmii["Assistant 2"] = df_filtered["Assistant 2"].astype(str).str[-4:-1]
 
-# Keep referees with at least 5 matches
-referee_stats = referee_stats[referee_stats["Matches"] >= 5]
-
-# Show top 15 referees by number of matches
-referee_stats = referee_stats.sort_values(
-    "Matches",
-    ascending=False
-).head(15)
+wmii = df_filtered.groupby("Referee")[["Total Goals"]].mean().reset_index()
+referees = df_filtered["Referee"].value_counts()
+referees = referees[referees >= 30].index
+wmii = wmii[wmii["Referee"].isin(referees)].sort_values("Total Goals")
 
 fig_referees = px.bar(
-    referee_stats,
+    data_frame=wmii,
     x="Referee",
-    y="AvgGoals",
-    color="Matches",
-    title="Average Total Goals per Match by Referee",
-    labels={
-        "AvgGoals": "Average Goals",
-        "Referee": "Referee",
-        "Matches": "Matches Officiated",
-    },
+    y="Total Goals",
+    title="Average total goals scored per World Cup match by referees by country",
+    labels={"Total Goals": "Goals per match"},
+    height=500,
+    width=900,
 )
-
 st.plotly_chart(fig_referees, use_container_width=True)
 
 # ---------------------------------------------------------------------------
