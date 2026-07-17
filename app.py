@@ -159,7 +159,7 @@ wmiii = pd.pivot_table(
     aggfunc="count",
     labels={"Home Team Goals":"Home Team Score",
             "Away Team Goals":"Away Team Score",
-            "color":"Total occurances"}",
+            "color":"Total occurances"},
     observed=True,
     fill_value=0,
 )
