@@ -64,7 +64,6 @@ fig = px.scatter(
     data_frame=wmi,
     x="Year",
     y="Total Goals",
-    title="Average total goals scored per World Cup match per year",
     labels={"Total Goals": "Goals per match"},
     height=500,
     width=900,
@@ -74,7 +73,7 @@ fig.update_traces(mode="lines+markers", selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 7. Total goals scored by country
+# 2. Total goals scored by country
 # ---------------------------------------------------------------------------
 st.subheader("Total Goals Scored by Country")
 
@@ -87,13 +86,12 @@ fig_country_goals = px.bar(
     data_frame=wmvii,
     x="Country",
     y="goals",
-    title="Total goals scored by country",
     labels={"Country": "Country", "goals": "Goals"},
 )
 st.plotly_chart(fig_country_goals, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 4. Distribution of goals scored by winning vs losing teams
+# 3. Distribution of goals scored by winning vs losing teams
 # ---------------------------------------------------------------------------
 st.subheader("Distribution of Goals Scored by Winning vs Losing Teams")
 
@@ -111,7 +109,6 @@ box_df["Losing Score"] = np.where(
 
 fig_box = px.box(
     data_frame=box_df,
-    title="Distribution of the goals scored by winning vs. losing teams",
     x=["Losing Score", "Winning Score"],
     height=500,
     width=900,
@@ -119,7 +116,7 @@ fig_box = px.box(
 st.plotly_chart(fig_box, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 2. Average total goals by referee country
+# 4. Average total goals by referee country
 #    FIX: truncate Referee to country code FIRST, count matches per country,
 #    THEN filter to countries with >=30 matches. The previous version counted
 #    full referee names before truncating, so almost nothing passed the
@@ -141,7 +138,6 @@ fig_referees = px.bar(
     data_frame=wmii,
     x="Referee",
     y="Total Goals",
-    title="Average total goals scored per World Cup match by referees by country",
     labels={"Total Goals": "Goals per match"},
     height=500,
     width=900,
@@ -149,7 +145,7 @@ fig_referees = px.bar(
 st.plotly_chart(fig_referees, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 3. Distribution of scores
+# 5. Distribution of scores
 # ---------------------------------------------------------------------------
 st.subheader("Distribution of Scores")
 
@@ -169,7 +165,6 @@ wmiii_display = wmiii.replace(0, np.nan)
 
 fig_scores = px.imshow(
     wmiii_display,
-    title="Distribution of scores",
     origin="lower",
     height=500,
     width=900,
@@ -177,7 +172,7 @@ fig_scores = px.imshow(
 st.plotly_chart(fig_scores, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 5. Attendance by year at each knockout stage
+# 6. Attendance by year at each knockout stage
 # ---------------------------------------------------------------------------
 st.subheader("Attendance by Year at Each Stage")
 
@@ -195,7 +190,6 @@ fig_attendance = px.line(
     x="Year",
     y="Attendance",
     color="Stage",
-    title="Attendance by year at each stage",
     category_orders={"Stage": ["Round of 16", "Quarter-finals", "Semi-finals", "Match for third place", "Final"]},
     height=500,
     width=900,
@@ -203,7 +197,7 @@ fig_attendance = px.line(
 st.plotly_chart(fig_attendance, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 6. Correlation between attendance and total goals by stage
+# 7. Correlation between attendance and total goals by stage
 # ---------------------------------------------------------------------------
 st.subheader("Correlation Between Attendance and Total Goals by Stage")
 
@@ -221,7 +215,6 @@ fig_attendance_goals = px.scatter(
     y="Total Goals",
     color="Stage",
     opacity=0.7,
-    title="Correlation between attendance and total goals scored by stage",
     category_orders={"Stage": ["Round of 16", "Quarter-finals", "Semi-finals", "Match for third place", "Final"]},
     trendline="ols",
 )
