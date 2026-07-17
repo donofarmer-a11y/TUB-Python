@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -53,58 +54,11 @@ if selected_teams:
 else:
     df_filtered = df_year
 
-# ---------------------------------------------------------------------------
-# 1. Home vs Away goals distribution (grouped bar)
-# ---------------------------------------------------------------------------
-st.subheader("Home vs Away Goals Distribution")
-
-home_counts = df_filtered["Home Team Goals"].value_counts().sort_index()
-away_counts = df_filtered["Away Team Goals"].value_counts().sort_index()
-all_goals = sorted(set(home_counts.index) | set(away_counts.index))
-home_counts = home_counts.reindex(all_goals, fill_value=0)
-away_counts = away_counts.reindex(all_goals, fill_value=0)
-
-dist_df = pd.concat(
-    [
-        pd.DataFrame({"Goals": all_goals, "Matches": home_counts.values, "Type": "Home Team Goals"}),
-        pd.DataFrame({"Goals": all_goals, "Matches": away_counts.values, "Type": "Away Team Goals"}),
-    ]
-)
-
-fig_dist = px.bar(
-    dist_df,
-    x="Goals",
-    y="Matches",
-    color="Type",
-    barmode="group",
-    title="Distribution of Home vs Away Team Goals",
-)
-st.plotly_chart(fig_dist, use_container_width=True)
+df_filtered = df_filtered.copy()
+df_filtered["Total Goals"] = df_filtered["Home Team Goals"] + df_filtered["Away Team Goals"]
 
 # ---------------------------------------------------------------------------
-# 2. Home vs Away goals pivot heatmap (scoreline frequency)
-# ---------------------------------------------------------------------------
-st.subheader("Scoreline Frequency (Home Goals x Away Goals)")
-
-pivot = pd.pivot_table(
-    df_filtered,
-    index="Home Team Goals",
-    columns="Away Team Goals",
-    values="Year",
-    aggfunc="count",
-    fill_value=0,
-)
-
-fig_heatmap = px.imshow(
-    pivot,
-    labels=dict(x="Away Team Goals", y="Home Team Goals", color="Matches"),
-    color_continuous_scale="Blues",
-    title="Number of Matches per Scoreline",
-)
-st.plotly_chart(fig_heatmap, use_container_width=True)
-
-# ---------------------------------------------------------------------------
-# 3. Average goals per match per World Cup year, with OLS trendline
+# 1. Average goals per match per World Cup year, with OLS trendline
 # ---------------------------------------------------------------------------
 st.subheader("Average Total Goals per World Cup Match per Year")
 
@@ -118,7 +72,6 @@ fig = px.scatter(
     data_frame=wmi,
     x="Year",
     y="Total Goals",
-    # markers = True,
     title="Average total goals scored per World Cup match per year",
     labels={"Total Goals": "Goals per match"},
     height=500,
@@ -127,3 +80,144 @@ fig = px.scatter(
 )
 fig.update_traces(mode="lines+markers", selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 2. Average total goals by referee country
+# ---------------------------------------------------------------------------
+st.subheader("Average Total Goals per World Cup Match by Referees by Country")
+
+referee_counts = df_filtered["Referee"].value_counts()
+referee_ids = referee_counts[referee_counts >= 30].index
+referee_goals = df_filtered[df_filtered["Referee"].isin(referee_ids)].copy()
+referee_goals["Referee"] = referee_goals["Referee"].astype(str).str[-4:-1]
+wmii = referee_goals.groupby("Referee")["Total Goals"].mean().reset_index().sort_values("Total Goals")
+
+fig_referees = px.bar(
+    data_frame=wmii,
+    x="Referee",
+    y="Total Goals",
+    title="Average total goals scored per World Cup match by referees by country",
+    labels={"Total Goals": "Goals per match"},
+    height=500,
+    width=900,
+)
+st.plotly_chart(fig_referees, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 3. Distribution of scores
+# ---------------------------------------------------------------------------
+st.subheader("Distribution of Scores")
+
+wmiii = pd.pivot_table(
+    df_filtered,
+    values="Year",
+    index="Home Team Goals",
+    columns="Away Team Goals",
+    aggfunc="count",
+    observed=True,
+    fill_value=0,
+)
+
+fig_scores = px.imshow(
+    wmiii,
+    title="Distribution of scores",
+    height=500,
+    width=900,
+)
+st.plotly_chart(fig_scores, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 4. Distribution of goals scored by winning vs losing teams
+# ---------------------------------------------------------------------------
+st.subheader("Distribution of Goals Scored by Winning vs Losing Teams")
+
+box_df = df_filtered.copy()
+box_df["Winning Score"] = np.where(
+    box_df["Home Team Goals"] > box_df["Away Team Goals"],
+    box_df["Home Team Goals"],
+    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Away Team Goals"], box_df["Home Team Goals"]),
+)
+box_df["Losing Score"] = np.where(
+    box_df["Home Team Goals"] > box_df["Away Team Goals"],
+    box_df["Away Team Goals"],
+    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Home Team Goals"], box_df["Away Team Goals"]),
+)
+
+fig_box = px.box(
+    data_frame=box_df,
+    title="Distribution of the goals scored by winning vs. losing teams",
+    x=["Losing Score", "Winning Score"],
+    height=500,
+    width=900,
+)
+st.plotly_chart(fig_box, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 5. Attendance by year at each knockout stage
+# ---------------------------------------------------------------------------
+st.subheader("Attendance by Year at Each Stage")
+
+wmv = df_filtered.groupby(["Year", "Stage"])["Attendance"].mean().reset_index()
+wmv = wmv[
+    (wmv["Stage"] == "Final")
+    | (wmv["Stage"] == "Semi-finals")
+    | (wmv["Stage"] == "Match for third place")
+    | (wmv["Stage"] == "Quarter-finals")
+    | (wmv["Stage"] == "Round of 16")
+]
+
+fig_attendance = px.line(
+    data_frame=wmv,
+    x="Year",
+    y="Attendance",
+    color="Stage",
+    title="Attendance by year at each stage",
+    category_orders={"Stage": ["Round of 16", "Quarter-finals", "Semi-finals", "Match for third place", "Final"]},
+    height=500,
+    width=900,
+)
+st.plotly_chart(fig_attendance, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 6. Correlation between attendance and total goals by stage
+# ---------------------------------------------------------------------------
+st.subheader("Correlation Between Attendance and Total Goals by Stage")
+
+wmvi = df_filtered[
+    (df_filtered["Stage"] == "Final")
+    | (df_filtered["Stage"] == "Semi-finals")
+    | (df_filtered["Stage"] == "Match for third place")
+    | (df_filtered["Stage"] == "Quarter-finals")
+    | (df_filtered["Stage"] == "Round of 16")
+]
+
+fig_attendance_goals = px.scatter(
+    data_frame=wmvi,
+    x="Attendance",
+    y="Total Goals",
+    color="Stage",
+    opacity=0.7,
+    title="Correlation between attendance and total goals scored by stage",
+    category_orders={"Stage": ["Round of 16", "Quarter-finals", "Semi-finals", "Match for third place", "Final"]},
+    trendline="ols",
+)
+st.plotly_chart(fig_attendance_goals, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 7. Total goals scored by country
+# ---------------------------------------------------------------------------
+st.subheader("Total Goals Scored by Country")
+
+home_goals = df_filtered.groupby("Home Team Name")["Home Team Goals"].sum()
+away_goals = df_filtered.groupby("Away Team Name")["Away Team Goals"].sum()
+wmvii = home_goals.add(away_goals, fill_value=0).sort_values(ascending=False).head(8).to_frame(name="goals").reset_index()
+wmvii = wmvii.rename(columns={"Home Team Name": "Country"})
+
+fig_country_goals = px.bar(
+    data_frame=wmvii,
+    x="Country",
+    y="goals",
+    title="Total goals scored by country",
+    labels={"Country": "Country", "goals": "Goals"},
+)
+st.plotly_chart(fig_country_goals, use_container_width=True)
