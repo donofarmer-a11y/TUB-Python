@@ -125,6 +125,7 @@ wmiii = pd.pivot_table(
 fig_scores = px.imshow(
     wmiii,
     title="Distribution of scores",
+    color_continuous_scale="Blues",
     height=500,
     width=900,
 )
