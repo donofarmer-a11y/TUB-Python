@@ -131,6 +131,7 @@ total_games_team = home_games.add(away_games, fill_value=0)
 
 goals_per_game = (total_goals_team / total_games_team).rename("Goals per Game")
 team_summary = pd.concat([total_goals_team.rename("Total Goals"), total_games_team.rename("Games Played"), goals_per_game], axis=1)
+team_summary.index.name = "Team"
 
 if selected_teams:
     team_summary_view = team_summary.loc[team_summary.index.intersection(selected_teams)]
@@ -141,7 +142,7 @@ else:
 team_summary_view = team_summary_view.sort_values("Goals per Game", ascending=False)
 
 fig_gpg = px.bar(
-    team_summary_view.reset_index().rename(columns={"index": "Team"}),
+    team_summary_view.reset_index(),
     x="Team",
     y="Goals per Game",
     hover_data=["Total Goals", "Games Played"],
