@@ -62,6 +62,7 @@ wmi = (goals_by_year / matches_by_year).rename("Total Goals").reset_index()
 
 fig = px.scatter(
     data_frame=wmi,
+    title="top 8 countries"
     x="Year",
     y="Total Goals",
     labels={"Total Goals": "Goals per match"},
@@ -136,6 +137,7 @@ wmii = referee_goals.groupby("Referee")["Total Goals"].mean().reset_index().sort
 
 fig_referees = px.bar(
     data_frame=wmii,
+    title="among countries that have refereed at least 30 matches",
     x="Referee",
     y="Total Goals",
     labels={"Total Goals": "Goals per match"},
@@ -152,8 +154,8 @@ st.subheader("Distribution of Scores")
 wmiii = pd.pivot_table(
     df_filtered,
     values="Year",
-    index="Home Team Goals",
-    columns="Away Team Goals",
+    columns="Home Team Goals",
+    index="Away Team Goals",
     aggfunc="count",
     observed=True,
     fill_value=0,
@@ -214,7 +216,7 @@ fig_attendance_goals = px.scatter(
     x="Attendance",
     y="Total Goals",
     color="Stage",
-    opacity=0.7,
+    opacity=0.5,
     category_orders={"Stage": ["Round of 16", "Quarter-finals", "Semi-finals", "Match for third place", "Final"]},
     trendline="ols",
 )
