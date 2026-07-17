@@ -82,25 +82,43 @@ fig.update_traces(mode="lines+markers", selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# 2. Average total goals by referee country
+# 2. Average total goals per referee
 # ---------------------------------------------------------------------------
-st.subheader("Average Total Goals per World Cup Match by Referees by Country")
+st.subheader("Average Total Goals per Match by Referee")
 
-referee_counts = df_filtered["Referee"].value_counts()
-referee_ids = referee_counts[referee_counts >= 30].index
-referee_goals = df_filtered[df_filtered["Referee"].isin(referee_ids)].copy()
-referee_goals["Referee"] = referee_goals["Referee"].astype(str).str[-4:-1]
-wmii = referee_goals.groupby("Referee")["Total Goals"].mean().reset_index().sort_values("Total Goals")
+# Calculate average goals for each referee
+referee_stats = (
+    df_filtered
+    .groupby("Referee")
+    .agg(
+        Matches=("Referee", "count"),
+        AvgGoals=("Total Goals", "mean")
+    )
+    .reset_index()
+)
+
+# Keep referees with at least 5 matches
+referee_stats = referee_stats[referee_stats["Matches"] >= 5]
+
+# Show top 15 referees by number of matches
+referee_stats = referee_stats.sort_values(
+    "Matches",
+    ascending=False
+).head(15)
 
 fig_referees = px.bar(
-    data_frame=wmii,
+    referee_stats,
     x="Referee",
-    y="Total Goals",
-    title="Average total goals scored per World Cup match by referees by country",
-    labels={"Total Goals": "Goals per match"},
-    height=500,
-    width=900,
+    y="AvgGoals",
+    color="Matches",
+    title="Average Total Goals per Match by Referee",
+    labels={
+        "AvgGoals": "Average Goals",
+        "Referee": "Referee",
+        "Matches": "Matches Officiated",
+    },
 )
+
 st.plotly_chart(fig_referees, use_container_width=True)
 
 # ---------------------------------------------------------------------------
