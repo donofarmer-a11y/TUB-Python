@@ -11,7 +11,6 @@ st.set_page_config(page_title="World Cup Matches Dashboard", layout="wide")
 @st.cache_data
 def load_data():
     df = pd.read_csv("World-cup-matches.csv")
-    # Normalize a historical naming split so team totals aren't fragmented
     df["Home Team Name"] = df["Home Team Name"].replace({"Germany FR": "Germany"})
     df["Away Team Name"] = df["Away Team Name"].replace({"Germany FR": "Germany"})
     return df
@@ -20,11 +19,6 @@ df = load_data()
 
 st.title("World Cup Matches Dashboard")
 
-# ---------------------------------------------------------------------------
-# Sidebar filters — kept minimal on purpose:
-# Year range and Team selection are the only two that meaningfully change
-# every chart below. Extra filters (stadium, referee, etc.) mostly add noise.
-# ---------------------------------------------------------------------------
 st.sidebar.header("Filters")
 
 min_year, max_year = int(df["Year"].min()), int(df["Year"].max())
@@ -33,7 +27,7 @@ year_range = st.sidebar.slider(
     min_value=min_year,
     max_value=max_year,
     value=(min_year, max_year),
-    step=4,  # World Cups occur every 4 years
+    step=4,
 )
 
 all_teams = sorted(set(df["Home Team Name"]) | set(df["Away Team Name"]))
@@ -43,11 +37,9 @@ selected_teams = st.sidebar.multiselect(
     default=[],
 )
 
-# Apply year filter globally
 mask_year = df["Year"].between(year_range[0], year_range[1])
 df_year = df[mask_year]
 
-# Apply team filter (a match counts if either side is a selected team)
 if selected_teams:
     mask_team = df_year["Home Team Name"].isin(selected_teams) | df_year["Away Team Name"].isin(selected_teams)
     df_filtered = df_year[mask_team]
@@ -83,18 +75,22 @@ st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
 # 2. Average total goals by referee country
+#    FIX: truncate Referee to country code FIRST, count matches per country,
+#    THEN filter to countries with >=30 matches. The previous version counted
+#    full referee names before truncating, so almost nothing passed the
+#    >=30 threshold and the chart came out empty.
 # ---------------------------------------------------------------------------
 st.subheader("Average Total Goals per World Cup Match by Referees by Country")
 
-wmii = df_filtered.copy()
-wmii["Referee"] = df_filtered["Referee"].astype(str).str[-4:-1]
-wmii["Assistant 1"] = df_filtered["Assistant 1"].astype(str).str[-4:-1]
-wmii["Assistant 2"] = df_filtered["Assistant 2"].astype(str).str[-4:-1]
+referee_country = df_filtered["Referee"].astype(str).str[-4:-1]
+country_counts = referee_country.value_counts()
+qualifying_countries = country_counts[country_counts >= 30].index
 
-wmii = df_filtered.groupby("Referee")[["Total Goals"]].mean().reset_index()
-referees = df_filtered["Referee"].value_counts()
-referees = referees[referees >= 30].index
-wmii = wmii[wmii["Referee"].isin(referees)].sort_values("Total Goals")
+referee_goals = df_filtered.copy()
+referee_goals["Referee"] = referee_country
+referee_goals = referee_goals[referee_goals["Referee"].isin(qualifying_countries)]
+
+wmii = referee_goals.groupby("Referee")["Total Goals"].mean().reset_index().sort_values("Total Goals")
 
 fig_referees = px.bar(
     data_frame=wmii,
@@ -125,8 +121,6 @@ wmiii = pd.pivot_table(
 fig_scores = px.imshow(
     wmiii,
     title="Distribution of scores",
-    color_continuous_scale="plotly3",
-    range_color=[1, wmiii.values.max()],
     height=500,
     width=900,
 )
