@@ -62,7 +62,7 @@ wmi = (goals_by_year / matches_by_year).rename("Total Goals").reset_index()
 
 fig = px.scatter(
     data_frame=wmi,
-    title="top 8 countries"
+    title="top 8 countries",
     x="Year",
     y="Total Goals",
     labels={"Total Goals": "Goals per match"},
