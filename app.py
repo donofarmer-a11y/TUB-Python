@@ -74,6 +74,51 @@ fig.update_traces(mode="lines+markers", selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
+# 7. Total goals scored by country
+# ---------------------------------------------------------------------------
+st.subheader("Total Goals Scored by Country")
+
+home_goals = df_filtered.groupby("Home Team Name")["Home Team Goals"].sum()
+away_goals = df_filtered.groupby("Away Team Name")["Away Team Goals"].sum()
+wmvii = home_goals.add(away_goals, fill_value=0).sort_values(ascending=False).head(8).to_frame(name="goals").reset_index()
+wmvii = wmvii.rename(columns={"Home Team Name": "Country"})
+
+fig_country_goals = px.bar(
+    data_frame=wmvii,
+    x="Country",
+    y="goals",
+    title="Total goals scored by country",
+    labels={"Country": "Country", "goals": "Goals"},
+)
+st.plotly_chart(fig_country_goals, use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# 4. Distribution of goals scored by winning vs losing teams
+# ---------------------------------------------------------------------------
+st.subheader("Distribution of Goals Scored by Winning vs Losing Teams")
+
+box_df = df_filtered.copy()
+box_df["Winning Score"] = np.where(
+    box_df["Home Team Goals"] > box_df["Away Team Goals"],
+    box_df["Home Team Goals"],
+    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Away Team Goals"], box_df["Home Team Goals"]),
+)
+box_df["Losing Score"] = np.where(
+    box_df["Home Team Goals"] > box_df["Away Team Goals"],
+    box_df["Away Team Goals"],
+    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Home Team Goals"], box_df["Away Team Goals"]),
+)
+
+fig_box = px.box(
+    data_frame=box_df,
+    title="Distribution of the goals scored by winning vs. losing teams",
+    x=["Losing Score", "Winning Score"],
+    height=500,
+    width=900,
+)
+st.plotly_chart(fig_box, use_container_width=True)
+
+# ---------------------------------------------------------------------------
 # 2. Average total goals by referee country
 #    FIX: truncate Referee to country code FIRST, count matches per country,
 #    THEN filter to countries with >=30 matches. The previous version counted
@@ -118,39 +163,18 @@ wmiii = pd.pivot_table(
     fill_value=0,
 )
 
+# Hide zero-count cells: replace 0 with NaN so Plotly leaves them blank
+# instead of coloring them with the low end of the scale.
+wmiii_display = wmiii.replace(0, np.nan)
+
 fig_scores = px.imshow(
-    wmiii,
+    wmiii_display,
     title="Distribution of scores",
+    origin="lower",
     height=500,
     width=900,
 )
 st.plotly_chart(fig_scores, use_container_width=True)
-
-# ---------------------------------------------------------------------------
-# 4. Distribution of goals scored by winning vs losing teams
-# ---------------------------------------------------------------------------
-st.subheader("Distribution of Goals Scored by Winning vs Losing Teams")
-
-box_df = df_filtered.copy()
-box_df["Winning Score"] = np.where(
-    box_df["Home Team Goals"] > box_df["Away Team Goals"],
-    box_df["Home Team Goals"],
-    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Away Team Goals"], box_df["Home Team Goals"]),
-)
-box_df["Losing Score"] = np.where(
-    box_df["Home Team Goals"] > box_df["Away Team Goals"],
-    box_df["Away Team Goals"],
-    np.where(box_df["Home Team Goals"] < box_df["Away Team Goals"], box_df["Home Team Goals"], box_df["Away Team Goals"]),
-)
-
-fig_box = px.box(
-    data_frame=box_df,
-    title="Distribution of the goals scored by winning vs. losing teams",
-    x=["Losing Score", "Winning Score"],
-    height=500,
-    width=900,
-)
-st.plotly_chart(fig_box, use_container_width=True)
 
 # ---------------------------------------------------------------------------
 # 5. Attendance by year at each knockout stage
@@ -203,21 +227,3 @@ fig_attendance_goals = px.scatter(
 )
 st.plotly_chart(fig_attendance_goals, use_container_width=True)
 
-# ---------------------------------------------------------------------------
-# 7. Total goals scored by country
-# ---------------------------------------------------------------------------
-st.subheader("Total Goals Scored by Country")
-
-home_goals = df_filtered.groupby("Home Team Name")["Home Team Goals"].sum()
-away_goals = df_filtered.groupby("Away Team Name")["Away Team Goals"].sum()
-wmvii = home_goals.add(away_goals, fill_value=0).sort_values(ascending=False).head(8).to_frame(name="goals").reset_index()
-wmvii = wmvii.rename(columns={"Home Team Name": "Country"})
-
-fig_country_goals = px.bar(
-    data_frame=wmvii,
-    x="Country",
-    y="goals",
-    title="Total goals scored by country",
-    labels={"Country": "Country", "goals": "Goals"},
-)
-st.plotly_chart(fig_country_goals, use_container_width=True)
